@@ -1,0 +1,2 @@
+# dn
+create daily note
