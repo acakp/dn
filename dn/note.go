@@ -2,10 +2,12 @@ package dn
 
 import (
 	"fmt"
-	"github.com/BurntSushi/toml"
 	"os"
 	"os/exec"
+	"regexp"
 	"time"
+
+	"github.com/BurntSushi/toml"
 )
 
 func Enter(filepath, editor, format string) {
@@ -43,19 +45,45 @@ func Enter(filepath, editor, format string) {
 }
 
 // # available variants:
-// # year: $YYYY or $YY
-// # month: $MM or $M
-// # day: $D
-// # weekday: $W or $WW
+// # year: %YYYY (output e.g. 2025) or %YY (25)
+// # month: %MM (output e.g. 09) or %M (September)
+// # day: %D (e.g. 03)
+// # weekday: %W (e.g. Monday) or %WW (01)
 func genName(format string) string {
 	now := time.Now()
 	var name string
 	if format == "" {
 		name = fmt.Sprintf("%v-%v-%v %v", now.Year(), int(now.Month()), now.Day(), now.Weekday().String()[:3])
 	} else {
+		name = formatName(format, now)
 	}
 	fmt.Println(name)
 	return name
+}
+
+func formatName(format string, now time.Time) string {
+	re := regexp.MustCompile(`%YY|%YYYY|%MM|%M|%D|%W|%WW`)
+	matches := re.FindAllString(format, -1)
+
+	for _, match := range matches {
+		switch match {
+		case "%YY":
+			format = regexp.MustCompile(`%YY`).ReplaceAllString(format, fmt.Sprintf("%02d", now.Year()%100))
+		case "%YYYY":
+			format = regexp.MustCompile(`%YYYY`).ReplaceAllString(format, fmt.Sprintf("%d", now.Year()))
+		case "%MM":
+			format = regexp.MustCompile(`%MM`).ReplaceAllString(format, fmt.Sprintf("%02d", now.Month()))
+		case "%M":
+			format = regexp.MustCompile(`%M`).ReplaceAllString(format, now.Month().String())
+		case "%D":
+			format = regexp.MustCompile(`%D`).ReplaceAllString(format, fmt.Sprintf("%02d", now.Day()))
+		case "%W":
+			format = regexp.MustCompile(`%W`).ReplaceAllString(format, now.Weekday().String())
+		case "%WW":
+			format = regexp.MustCompile(`%WW`).ReplaceAllString(format, fmt.Sprintf("%02d", int(now.Weekday())))
+		}
+	}
+	return format
 }
 
 type Config struct {
@@ -70,6 +98,13 @@ func ReadConf() Config {
 		panic(err)
 	}
 	confPath += "/dn/config.toml"
+	if _, err := os.Stat(confPath); err != nil {
+		if os.IsNotExist(err) {
+			return Config{}
+		} else {
+			panic(err)
+		}
+	}
 	fmt.Println(confPath)
 	confRaw, err := os.ReadFile(confPath)
 	if err != nil {

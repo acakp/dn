@@ -25,7 +25,7 @@ var rootCmd = &cobra.Command{
 				panic(err)
 			}
 		}
-		dn.Enter(path, conf.Editor)
+		dn.Enter(path, conf.Editor, conf.Format)
 	},
 }
 
