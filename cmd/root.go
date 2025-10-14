@@ -1,8 +1,9 @@
 package cmd
 
 import (
-	"acakp.dn/dn"
 	"os"
+
+	"acakp.dn/dn"
 
 	"github.com/spf13/cobra"
 )
@@ -15,8 +16,16 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
-		// dn.Enter("daily-note.md", "~/code/dn/")
-		dn.Enter("~/daily-notes")
+		conf := dn.ReadConf()
+		path := conf.Path
+		if path == "" {
+			var err error
+			path, err = cmd.Flags().GetString("path-to-note")
+			if err != nil {
+				panic(err)
+			}
+		}
+		dn.Enter(path, conf.Editor)
 	},
 }
 
@@ -38,5 +47,5 @@ func init() {
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.Flags().StringP("path-to-note", "p", "~/", "Path where note will be saved")
 }
