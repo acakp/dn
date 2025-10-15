@@ -28,7 +28,11 @@ func Enter(filepath, editor, format string) {
 		editor, ok = os.LookupEnv("EDITOR")
 		if ok == false {
 			fmt.Println("[warning]: $EDITOR environment variable is empty, will use vim instead...")
-			editor = "vim"
+			if os.PathSeparator == '\\' { // is Windows?
+				editor = "notepad.exe"
+			} else {
+				editor = "vim"
+			}
 		}
 	}
 
@@ -44,11 +48,6 @@ func Enter(filepath, editor, format string) {
 	}
 }
 
-// # available variants:
-// # year: %YYYY (output e.g. 2025) or %YY (25)
-// # month: %MM (output e.g. 09) or %M (September)
-// # day: %D (e.g. 03)
-// # weekday: %W (e.g. Monday) or %WW (01)
 func genName(format string) string {
 	now := time.Now()
 	var name string
@@ -62,25 +61,27 @@ func genName(format string) string {
 }
 
 func formatName(format string, now time.Time) string {
-	re := regexp.MustCompile(`%YY|%YYYY|%MM|%M|%D|%W|%WW`)
+	re := regexp.MustCompile(`%YYYY|%YY|%MM|%M|%D|%WW|%W|%w`)
 	matches := re.FindAllString(format, -1)
 
 	for _, match := range matches {
 		switch match {
-		case "%YY":
-			format = regexp.MustCompile(`%YY`).ReplaceAllString(format, fmt.Sprintf("%02d", now.Year()%100))
 		case "%YYYY":
 			format = regexp.MustCompile(`%YYYY`).ReplaceAllString(format, fmt.Sprintf("%d", now.Year()))
+		case "%YY":
+			format = regexp.MustCompile(`%YY`).ReplaceAllString(format, fmt.Sprintf("%02d", now.Year()%100))
 		case "%MM":
 			format = regexp.MustCompile(`%MM`).ReplaceAllString(format, fmt.Sprintf("%02d", now.Month()))
 		case "%M":
 			format = regexp.MustCompile(`%M`).ReplaceAllString(format, now.Month().String())
 		case "%D":
 			format = regexp.MustCompile(`%D`).ReplaceAllString(format, fmt.Sprintf("%02d", now.Day()))
-		case "%W":
-			format = regexp.MustCompile(`%W`).ReplaceAllString(format, now.Weekday().String())
 		case "%WW":
 			format = regexp.MustCompile(`%WW`).ReplaceAllString(format, fmt.Sprintf("%02d", int(now.Weekday())))
+		case "%W":
+			format = regexp.MustCompile(`%W`).ReplaceAllString(format, now.Weekday().String())
+		case "%w":
+			format = regexp.MustCompile(`%w`).ReplaceAllString(format, now.Weekday().String()[:3])
 		}
 	}
 	return format
@@ -97,9 +98,11 @@ func ReadConf() Config {
 	if err != nil {
 		panic(err)
 	}
-	confPath += "/dn/config.toml"
+	pathSep := string(os.PathSeparator)
+	confPath += fmt.Sprintf("%vdn%vconfig.toml", pathSep, pathSep)
 	if _, err := os.Stat(confPath); err != nil {
 		if os.IsNotExist(err) {
+			// fmt.Printf("[info]: config file (%v) not found\n", confPath)
 			return Config{}
 		} else {
 			panic(err)
@@ -115,8 +118,5 @@ func ReadConf() Config {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("path:", conf.Path)
-	fmt.Println("editor:", conf.Editor)
-	fmt.Println("format:", conf.Format)
 	return conf
 }
