@@ -16,23 +16,45 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
-		conf := dn.ReadConf()
-		path := getSetting(cmd, conf.Path, "path-to-note")
-		ext := getSetting(cmd, conf.Extension, "extension")
-		dn.Enter(path, conf.Editor, conf.Format, ext)
+		conf := getCompleteConf(cmd)
+		dn.Enter(conf)
 	},
 }
 
-func getSetting(cmd *cobra.Command, fromConfig, flag string) string {
-	opt := fromConfig
-	if opt == "" {
-		var err error
-		opt, err = cmd.Flags().GetString(flag)
-		if err != nil {
-			panic(err)
-		}
+func getFlags(cmd *cobra.Command) dn.Config {
+	var flags dn.Config
+	flags.Path = getFlag(cmd, "path-to-note")
+	flags.Editor = getFlag(cmd, "editor")
+	flags.Extension = getFlag(cmd, "extension")
+	flags.Format = getFlag(cmd, "format")
+	flags.IsYesterday = getFlag(cmd, "yesterday")
+	return flags
+}
+
+func getFlag(cmd *cobra.Command, flagName string) string {
+	flag, err := cmd.Flags().GetString(flagName)
+	if err != nil {
+		panic(err)
 	}
-	return opt
+	return flag
+}
+
+func getCompleteConf(cmd *cobra.Command) dn.Config {
+	flags := getFlags(cmd)
+	conf := dn.ReadConf()
+	if conf.Path == "" || cmd.Flags().Changed("path-to-note") {
+		conf.Path = flags.Path
+	}
+	if conf.Editor == "" || cmd.Flags().Changed("editor") {
+		conf.Editor = flags.Editor
+	}
+	if conf.Format == "" || cmd.Flags().Changed("format") {
+		conf.Format = flags.Format
+	}
+	if conf.Extension == "" || cmd.Flags().Changed("extension") {
+		conf.Extension = flags.Extension
+	}
+	return conf
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -54,5 +76,8 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	rootCmd.Flags().StringP("path-to-note", "p", "~/", "Path where note will be saved")
-	rootCmd.Flags().StringP("extension", "e", "md", "File extension")
+	rootCmd.Flags().StringP("editor", "e", "", "Editor to write a note")
+	rootCmd.Flags().StringP("format", "f", "%YYYY-%M-%D %w", "How the note filename will look like")
+	rootCmd.Flags().StringP("extension", "E", "md", "File extension")
+	rootCmd.Flags().StringP("yesterday", "y", "false", "Open yesterday's note")
 }

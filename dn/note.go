@@ -10,35 +10,34 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-func Enter(filepath, editor, format, ext string) {
-	if filepath[0] == '~' {
+func Enter(conf Config) {
+	if conf.Path[0] == '~' {
 		// replace '~' with actual user path
 		home, err := os.UserHomeDir()
 		if err != nil {
 			panic(err)
 		}
-		filepath = home + filepath[1:]
+		conf.Path = home + conf.Path[1:]
 	}
-	if filepath[len(filepath)-1] != '/' {
-		filepath += "/"
+	if conf.Path[len(conf.Path)-1] != '/' {
+		conf.Path += "/"
 	}
 
-	if editor == "" {
+	if conf.Editor == "" {
 		var ok bool
-		editor, ok = os.LookupEnv("EDITOR")
+		conf.Editor, ok = os.LookupEnv("EDITOR")
 		if ok == false {
-			fmt.Println("[warning]: $EDITOR environment variable is empty, will use vim instead...")
 			if os.PathSeparator == '\\' { // is Windows?
-				editor = "notepad.exe"
+				conf.Editor = "notepad.exe"
 			} else {
-				editor = "vim"
+				conf.Editor = "vim"
 			}
 		}
 	}
 
-	filename := genName(format, ext)
-	fullpath := filepath + filename
-	cmd := exec.Command(editor, fullpath)
+	filename := genName(conf.Format, conf.Extension)
+	fullpath := conf.Path + filename
+	cmd := exec.Command(conf.Editor, fullpath)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -50,16 +49,6 @@ func Enter(filepath, editor, format, ext string) {
 
 func genName(format string, ext string) string {
 	now := time.Now()
-	var name string
-	if format == "" {
-		name = fmt.Sprintf("%v-%v-%v %v.%s", now.Year(), int(now.Month()), now.Day(), now.Weekday().String()[:3], ext)
-	} else {
-		name = formatName(format, ext, now)
-	}
-	return name
-}
-
-func formatName(format, ext string, now time.Time) string {
 	re := regexp.MustCompile(`%YYYY|%YY|%MM|%M|%D|%WW|%W|%w`)
 	matches := re.FindAllString(format, -1)
 
@@ -87,10 +76,11 @@ func formatName(format, ext string, now time.Time) string {
 }
 
 type Config struct {
-	Path      string
-	Editor    string
-	Format    string
-	Extension string
+	Path        string
+	Editor      string
+	Format      string
+	Extension   string
+	IsYesterday string // true or false
 }
 
 func ReadConf() Config {
