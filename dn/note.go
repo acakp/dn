@@ -10,7 +10,7 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-func Enter(filepath, editor, format string) {
+func Enter(filepath, editor, format, ext string) {
 	if filepath[0] == '~' {
 		// replace '~' with actual user path
 		home, err := os.UserHomeDir()
@@ -36,7 +36,7 @@ func Enter(filepath, editor, format string) {
 		}
 	}
 
-	filename := genName(format)
+	filename := genName(format, ext)
 	fullpath := filepath + filename
 	cmd := exec.Command(editor, fullpath)
 	cmd.Stdin = os.Stdin
@@ -48,19 +48,18 @@ func Enter(filepath, editor, format string) {
 	}
 }
 
-func genName(format string) string {
+func genName(format string, ext string) string {
 	now := time.Now()
 	var name string
 	if format == "" {
-		name = fmt.Sprintf("%v-%v-%v %v", now.Year(), int(now.Month()), now.Day(), now.Weekday().String()[:3])
+		name = fmt.Sprintf("%v-%v-%v %v.%s", now.Year(), int(now.Month()), now.Day(), now.Weekday().String()[:3], ext)
 	} else {
-		name = formatName(format, now)
+		name = formatName(format, ext, now)
 	}
-	fmt.Println(name)
 	return name
 }
 
-func formatName(format string, now time.Time) string {
+func formatName(format, ext string, now time.Time) string {
 	re := regexp.MustCompile(`%YYYY|%YY|%MM|%M|%D|%WW|%W|%w`)
 	matches := re.FindAllString(format, -1)
 
@@ -84,13 +83,14 @@ func formatName(format string, now time.Time) string {
 			format = regexp.MustCompile(`%w`).ReplaceAllString(format, now.Weekday().String()[:3])
 		}
 	}
-	return format
+	return format + "." + ext
 }
 
 type Config struct {
-	Path   string
-	Editor string
-	Format string
+	Path      string
+	Editor    string
+	Format    string
+	Extension string
 }
 
 func ReadConf() Config {
@@ -108,7 +108,6 @@ func ReadConf() Config {
 			panic(err)
 		}
 	}
-	fmt.Println(confPath)
 	confRaw, err := os.ReadFile(confPath)
 	if err != nil {
 		panic(err)

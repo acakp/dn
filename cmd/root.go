@@ -17,16 +17,22 @@ var rootCmd = &cobra.Command{
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
 		conf := dn.ReadConf()
-		path := conf.Path
-		if path == "" {
-			var err error
-			path, err = cmd.Flags().GetString("path-to-note")
-			if err != nil {
-				panic(err)
-			}
-		}
-		dn.Enter(path, conf.Editor, conf.Format)
+		path := getSetting(cmd, conf.Path, "path-to-note")
+		ext := getSetting(cmd, conf.Extension, "extension")
+		dn.Enter(path, conf.Editor, conf.Format, ext)
 	},
+}
+
+func getSetting(cmd *cobra.Command, fromConfig, flag string) string {
+	opt := fromConfig
+	if opt == "" {
+		var err error
+		opt, err = cmd.Flags().GetString(flag)
+		if err != nil {
+			panic(err)
+		}
+	}
+	return opt
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -48,4 +54,5 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	rootCmd.Flags().StringP("path-to-note", "p", "~/", "Path where note will be saved")
+	rootCmd.Flags().StringP("extension", "e", "md", "File extension")
 }
