@@ -27,7 +27,12 @@ func getFlags(cmd *cobra.Command) dn.Config {
 	flags.Editor = getFlag(cmd, "editor")
 	flags.Extension = getFlag(cmd, "extension")
 	flags.Format = getFlag(cmd, "format")
-	flags.IsYesterday = getFlag(cmd, "yesterday")
+	// flags.IsPrevious = getFlag(cmd, "previous")
+	prev, err := cmd.Flags().GetBool("previous")
+	if err != nil {
+		panic(err)
+	}
+	flags.IsPrevious = prev
 	return flags
 }
 
@@ -54,6 +59,7 @@ func getCompleteConf(cmd *cobra.Command) dn.Config {
 	if conf.Extension == "" || cmd.Flags().Changed("extension") {
 		conf.Extension = flags.Extension
 	}
+	conf.IsPrevious = flags.IsPrevious
 	return conf
 }
 
@@ -77,7 +83,7 @@ func init() {
 	// when this action is called directly.
 	rootCmd.Flags().StringP("path-to-note", "p", "~/", "Path where note will be saved")
 	rootCmd.Flags().StringP("editor", "e", "", "Editor to write a note")
-	rootCmd.Flags().StringP("format", "f", "%YYYY-%M-%D %w", "How the note filename will look like")
+	rootCmd.Flags().StringP("format", "f", "%YYYY-%MM-%D %w", "How the note filename will look like")
 	rootCmd.Flags().StringP("extension", "E", "md", "File extension")
-	rootCmd.Flags().StringP("yesterday", "y", "false", "Open yesterday's note")
+	rootCmd.Flags().BoolP("previous", "1", false, "Open previous note")
 }
