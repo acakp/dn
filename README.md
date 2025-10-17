@@ -50,4 +50,5 @@ How the note will be named. You can customize the naming by using the format str
 ## Flags
 
 All settings from the config can be passed as flags. Type `dn -h` for more info.
+
 Type `dn -1` to open a note from a previous day. This command opens a note named with the date of the day preceding the current one. For example, if the format is "%YYYY-%MM-%D" and today's date is "2025-10-17", using the `-1` flag will yield "2025-10-16". If the format is "%YYYY", using the `-1` flag will yield "2024".
