@@ -66,6 +66,9 @@ func genName(format, ext string, isPrevious bool) string {
 		switch {
 		case s.Contains(format, `%D`) || s.Contains(format, `%W`) || s.Contains(format, `%w`):
 			wprev := now.Weekday() - 1
+			if time.Now().Weekday() == time.Sunday {
+				wprev = time.Saturday
+			}
 			ww = fmt.Sprintf("%02d", int(wprev))
 			w = wprev.String()
 			wlower = wprev.String()[:3]
